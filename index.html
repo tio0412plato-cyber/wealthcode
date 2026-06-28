@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>刀盾工作台</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --paper:#f5f2ec; --card:#fffdf9;
+    --sword:#b8442e; --shield:#2f5d50; --gold:#c08a2d;
+    --line:#ddd6c8; --mute:#8a8478; --warn:#c0392b; --ok:#2f7d4f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.5;
+    padding-bottom:80px; max-width:680px; margin:0 auto;
+  }
+  header{
+    padding:22px 20px 14px; border-bottom:2px solid var(--ink);
+    position:relative;
+  }
+  .title{font-size:24px; font-weight:800; letter-spacing:1px; display:flex; align-items:center; gap:8px}
+  .title .ji{color:var(--sword)} .title .dun{color:var(--shield)}
+  .sub{font-size:12px; color:var(--mute); margin-top:4px}
+  .updated{font-size:11px; color:var(--mute); margin-top:2px; font-variant-numeric:tabular-nums}
+
+  /* tabs */
+  .tabs{display:flex; gap:0; margin:0; position:sticky; top:0; z-index:20;
+    background:var(--paper); border-bottom:1px solid var(--line)}
+  .tab{flex:1; text-align:center; padding:14px 0; font-size:15px; font-weight:600;
+    color:var(--mute); border-bottom:3px solid transparent; cursor:pointer; transition:.15s}
+  .tab.on{color:var(--ink); border-bottom-color:var(--sword)}
+
+  .page{display:none; padding:16px} .page.on{display:block}
+
+  /* posture bar */
+  .posture{display:flex; gap:10px; margin-bottom:16px}
+  .pcell{flex:1; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; position:relative; overflow:hidden}
+  .pcell .lab{font-size:12px; color:var(--mute)}
+  .pcell .val{font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; margin-top:2px}
+  .pcell.sword{border-left:4px solid var(--sword)} .pcell.sword .val{color:var(--sword)}
+  .pcell.shield{border-left:4px solid var(--shield)} .pcell.shield .val{color:var(--shield)}
+  .pcell .hint{font-size:11px; color:var(--mute); margin-top:2px}
+
+  /* card */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:15px 16px; margin-bottom:12px; position:relative}
+  .card.dead{opacity:.62}
+  .crow{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+  .name{font-size:18px; font-weight:800}
+  .code{font-size:12px; color:var(--mute); font-weight:500; margin-left:6px}
+  .tag{font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap}
+  .tag.sword{background:rgba(184,68,46,.12); color:var(--sword)}
+  .tag.shield{background:rgba(47,93,80,.12); color:var(--shield)}
+
+  .line2{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 8px}
+  .chip{font-size:12px; padding:3px 9px; border-radius:6px; background:#efe9dd; color:#5a5448}
+  .chip b{color:var(--ink)}
+
+  .logic{font-size:13.5px; margin:8px 0; padding:9px 11px; border-radius:8px;
+    background:#faf7f0; border-left:3px solid var(--line)}
+  .logic.on{border-left-color:var(--ok)} .logic.off{border-left-color:var(--warn)}
+  .logic .k{font-weight:700; font-size:12px; letter-spacing:.5px}
+  .logic.on .k{color:var(--ok)} .logic.off .k{color:var(--warn)}
+
+  .foot{display:flex; align-items:center; justify-content:space-between; margin-top:10px;
+    padding-top:10px; border-top:1px dashed var(--line)}
+  .hold{font-size:12.5px; color:#5a5448}
+  .hold b{color:var(--ink)}
+  .act{font-size:13px; font-weight:800; padding:5px 14px; border-radius:8px}
+  .act.hold{background:#eef2ed; color:var(--shield)}
+  .act.cut{background:#fbe9e7; color:var(--warn)}
+  .act.watch{background:#fdf3e0; color:var(--gold)}
+  .act.add{background:#e9f3ec; color:var(--ok)}
+
+  .panic{font-size:11px; color:var(--mute); margin-top:7px; font-variant-numeric:tabular-nums}
+
+  /* signal page */
+  .sig-hd{font-size:13px; font-weight:800; letter-spacing:1px; color:var(--mute);
+    margin:18px 2px 8px; text-transform:uppercase}
+  .sig-hd:first-child{margin-top:2px}
+  .mainline{background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:13px 15px; margin-bottom:10px; display:flex; align-items:center; gap:12px}
+  .mainline .dot{width:10px; height:10px; border-radius:50%; flex-shrink:0}
+  .mainline .nm{font-weight:800; font-size:15px}
+  .mainline .st{font-size:12px; color:var(--mute); margin-top:2px}
+  .mainline .badge{margin-left:auto; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px}
+
+  .cyc{display:flex; gap:8px; margin-bottom:14px}
+  .cyc div{flex:1; text-align:center; padding:11px 6px; border-radius:9px; font-size:12px;
+    background:var(--card); border:1px solid var(--line); color:var(--mute)}
+  .cyc div.on{background:var(--ink); color:var(--paper); border-color:var(--ink); font-weight:700}
+  .cyc div .big{display:block; font-size:15px; font-weight:800; margin-bottom:2px}
+
+  .timept{background:var(--card); border:1px solid var(--line); border-radius:9px;
+    padding:11px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px}
+  .timept .d{font-size:13px; font-weight:800; color:var(--sword); font-variant-numeric:tabular-nums;
+    min-width:46px}
+  .timept .ev{font-size:13.5px}
+  .timept .ev small{display:block; color:var(--mute); font-size:11px; margin-top:1px}
+
+  .quote{margin:20px 2px 0; padding:14px 16px; background:#efe9dd; border-radius:10px;
+    font-size:13.5px; color:#5a5448; font-style:italic; text-align:center}
+
+  .disc{font-size:10.5px; color:var(--mute); text-align:center; margin:22px 16px 0; line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div class="title"><span class="ji">刀</span><span class="dun">盾</span>工作台</div>
+  <div class="sub">琰哥框架 · 持仓逻辑与持有时间一屏掌握</div>
+  <div class="updated" id="upd"></div>
+</header>
+
+<div class="tabs">
+  <div class="tab on" data-p="hold">持仓诊断</div>
+  <div class="tab" data-p="sig">信号速览</div>
+</div>
+
+<!-- ============ 持仓诊断 ============ -->
+<div class="page on" id="hold">
+  <div class="posture">
+    <div class="pcell sword">
+      <div class="lab">剑 · 进攻仓</div>
+      <div class="val" id="swPct">—</div>
+      <div class="hint">主线龙头,灵活调整</div>
+    </div>
+    <div class="pcell shield">
+      <div class="lab">盾 · 防御仓</div>
+      <div class="val" id="shPct">—</div>
+      <div class="hint">长线底仓,每日做T</div>
+    </div>
+  </div>
+  <div id="cards"></div>
+</div>
+
+<!-- ============ 信号速览 ============ -->
+<div class="page" id="sig">
+  <div class="sig-hd">当前节奏</div>
+  <div class="cyc" id="cyc"></div>
+
+  <div class="sig-hd">主线状态</div>
+  <div id="mainlines"></div>
+
+  <div class="sig-hd">关键时间点</div>
+  <div id="timepts"></div>
+
+  <div class="quote" id="quote"></div>
+</div>
+
+<div class="disc">仅为个人学习笔记 · 不构成任何投资建议 · 数据时点见顶部</div>
+
+<script>
+/* ============================================================
+   数据区 —— 每期更新只改这里。Mio 把琰哥文稿发我,我改这块。
+   ============================================================ */
+const DATA = {
+  updated: "2026-06-03",          // 数据时点
+  posture: { sword: "—", shield: "—" },  // 进攻/防御仓占比,确认持仓后填
+
+  // 持仓诊断:每只票一条
+  holdings: [
+    {
+      name:"英维克", code:"002837",
+      role:"sword",                 // sword=剑  shield=盾
+      mainline:"液冷 / 算力",
+      mainState:"戴维斯双杀后观察",
+      logicOn:false,                // 逻辑还在=true / 已破=false
+      logic:"Q1增收不增利,利润暴跌82%,盈利逻辑待Q2验证",
+      holdType:"短线博弈",          // 长线 / 短线博弈
+      holdHint:"破位即走,不当长线拿",
+      panic:"高点121.74 → 95区间,已跌超20%,进入恐慌深水区",
+      action:"watch", actionTxt:"观察"  // hold持有 / add加仓 / watch观察 / cut减清
+    },
+    {
+      name:"示例·商业航天龙头", code:"——",
+      role:"sword",
+      mainline:"商业航天",
+      mainState:"五浪启动,5-6月高潮",
+      logicOn:true,
+      logic:"SpaceX 6月IPO催化,主线逻辑完整,注意五浪极致分化不普涨",
+      holdType:"长线",
+      holdHint:"目标2-3倍,需持有≥200交易日",
+      panic:"15%恐慌值:跌到此位问自己还能拿吗,不能=仓位太重",
+      action:"hold", actionTxt:"持有"
+    },
+    {
+      name:"示例·化工盾", code:"——",
+      role:"shield",
+      mainline:"化工(防御)",
+      mainState:"全年防御,煤化工加强",
+      logicOn:true,
+      logic:"今年化工=去年的铜,产业大周期反转,逻辑硬",
+      holdType:"长线",
+      holdHint:"底仓不动如山,每日做T",
+      panic:"油价>85美金时煤化工成本最低,加足马力",
+      action:"hold", actionTxt:"持有"
+    },
+    {
+      name:"示例·待清尾仓", code:"——",
+      role:"sword",
+      mainline:"无明确主线",
+      mainState:"已脱离主线",
+      logicOn:false,
+      logic:"不在当前任何主线上,占用仓位与注意力",
+      holdType:"短线博弈",
+      holdHint:"买新票前先清尾部 —— 该清未清",
+      panic:"留盈卖亏:别砸赚钱票去保亏钱票",
+      action:"cut", actionTxt:"清仓"
+    }
+  ],
+
+  // 信号速览
+  cycle: "B",  // A双吹风 / B单吹风 / C埋伏期
+  cycleNote: "5月-10月,只剩消息面驱动,题材行情,成交萎缩",
+
+  mainlines: [
+    { name:"商业航天", state:"进攻主线 · 五浪启动 · 5-6月高潮", level:"hot",  badge:"主线" },
+    { name:"智能驾驶", state:"进攻新增 · AI落地方向",            level:"hot",  badge:"新增" },
+    { name:"电池电力", state:"隔膜/溶剂/核电/火电 · 厄尔尼诺+AI用电", level:"warm", badge:"进攻" },
+    { name:"化工(盾)", state:"防御长线 · 煤化工加强",            level:"warm", badge:"防御" },
+    { name:"光通信/光纤", state:"已燃尽 · 尾部击鼓传花,边打边撤",  level:"cold", badge:"警惕" },
+    { name:"电池(单股)", state:"危险信号 · 钠电池没那么好",       level:"cold", badge:"危险" }
+  ],
+
+  timepoints: [
+    { d:"6月", ev:"SpaceX IPO", note:"商业航天核心催化剂,确认后看溢出" },
+    { d:"6-7月", ev:"厄尔尼诺窗口", note:"水电受损→火电/核电/风电受益;别买水电" },
+    { d:"逢假期", ev:"节前降仓位", note:"变量太多,仓位不超5成" }
+  ],
+
+  quote: "「股票不是比谁赚得多,是比谁活得久。」"
+};
+
+/* ============================================================
+   渲染区 —— 一般不用动
+   ============================================================ */
+document.getElementById('upd').textContent = "数据时点 · " + DATA.updated;
+document.getElementById('swPct').textContent = DATA.posture.sword;
+document.getElementById('shPct').textContent = DATA.posture.shield;
+
+const actCls = {hold:'hold', add:'add', watch:'watch', cut:'cut'};
+document.getElementById('cards').innerHTML = DATA.holdings.map(h => `
+  <div class="card ${h.logicOn?'':'dead'}">
+    <div class="crow">
+      <div><span class="name">${h.name}</span><span class="code">${h.code}</span></div>
+      <span class="tag ${h.role}">${h.role==='sword'?'剑 进攻':'盾 防御'}</span>
+    </div>
+    <div class="line2">
+      <span class="chip">主线 <b>${h.mainline}</b></span>
+      <span class="chip">${h.mainState}</span>
+    </div>
+    <div class="logic ${h.logicOn?'on':'off'}">
+      <span class="k">${h.logicOn?'逻辑还在':'逻辑已破'}</span> · ${h.logic}
+    </div>
+    <div class="foot">
+      <div class="hold"><b>${h.holdType}</b> · ${h.holdHint}</div>
+      <span class="act ${actCls[h.action]}">${h.actionTxt}</span>
+    </div>
+    <div class="panic">⚠ ${h.panic}</div>
+  </div>
+`).join('');
+
+const cycles = [
+  {k:"A", t:"双吹风", d:"3-4月·最强"},
+  {k:"B", t:"单吹风", d:"5-10月·题材"},
+  {k:"C", t:"埋伏期", d:"10-12月·赌预期"}
+];
+document.getElementById('cyc').innerHTML = cycles.map(c=>`
+  <div class="${c.k===DATA.cycle?'on':''}">
+    <span class="big">${c.t}</span>${c.d}
+  </div>`).join('');
+
+const lvColor = {hot:'#b8442e', warm:'#c08a2d', cold:'#9a9488'};
+const lvBadge = {hot:'rgba(184,68,46,.12)', warm:'rgba(192,138,45,.14)', cold:'#e6e0d4'};
+const lvBadgeT= {hot:'#b8442e', warm:'#c08a2d', cold:'#8a8478'};
+document.getElementById('mainlines').innerHTML = DATA.mainlines.map(m=>`
+  <div class="mainline">
+    <span class="dot" style="background:${lvColor[m.level]}"></span>
+    <div><div class="nm">${m.name}</div><div class="st">${m.state}</div></div>
+    <span class="badge" style="background:${lvBadge[m.level]};color:${lvBadgeT[m.level]}">${m.badge}</span>
+  </div>`).join('');
+
+document.getElementById('timepts').innerHTML = DATA.timepoints.map(t=>`
+  <div class="timept">
+    <span class="d">${t.d}</span>
+    <span class="ev">${t.ev}<small>${t.note}</small></span>
+  </div>`).join('');
+
+document.getElementById('quote').textContent = DATA.quote;
+
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+    tab.classList.add('on');
+    document.getElementById(tab.dataset.p).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>
