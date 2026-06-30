@@ -28,7 +28,13 @@
   .title{font-size:24px; font-weight:800; letter-spacing:1px; display:flex; align-items:center; gap:8px}
   .title .ji{color:var(--sword)} .title .dun{color:var(--shield)}
   .sub{font-size:12px; color:var(--mute); margin-top:4px}
-  .updated{font-size:11px; color:var(--mute); margin-top:2px; font-variant-numeric:tabular-nums}
+  .updated{font-size:11px; color:var(--mute); font-variant-numeric:tabular-nums}
+  .ep-row{display:flex; align-items:center; gap:10px; margin-top:8px}
+  .ep-sel{font-size:13px; font-weight:600; color:var(--ink); background:var(--card);
+    border:1px solid var(--line); border-radius:8px; padding:6px 28px 6px 10px; cursor:pointer;
+    -webkit-appearance:none; appearance:none; font-family:inherit;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238a8478'/></svg>");
+    background-repeat:no-repeat; background-position:right 10px center}
 
   .tabs{display:flex; position:sticky; top:0; z-index:20;
     background:var(--paper); border-bottom:1px solid var(--line)}
@@ -156,7 +162,10 @@
 <header>
   <div class="title"><span class="ji">刀</span><span class="dun">盾</span>工作台</div>
   <div class="sub">琰哥框架 · 持仓逻辑与下周预案一屏掌握</div>
-  <div class="updated" id="upd"></div>
+  <div class="ep-row">
+    <select id="epSel" class="ep-sel" aria-label="选择往期"></select>
+    <span class="updated" id="upd"></span>
+  </div>
 </header>
 
 <div class="tabs">
@@ -210,195 +219,102 @@
 
 <script>
 /* ============================================================
-   数据区 —— 每期更新只改这里
+   渲染区 —— 数据来自 data/<日期>.json，清单见 data/index.json
+   每期更新：在 data/ 下新增一个 <日期>.json，并在 index.json 登记一行
    ============================================================ */
-const DATA = {
-  updated: "2026-06-30",
-  posture: { sword: "—", shield: "—" },
-
-  holdings: [
-    { name:"歌尔股份", code:"002241", role:"sword", mainline:"消费电子/声学/VR", mainState:"消费端,琰哥明确说慎重",
-      logicOn:false, logic:"最大持仓但-23%。不在非常6+3科技主线,属消费端,中报承压。仓位与亏损双重最重",
-      holdType:"待定", holdHint:"消费慎重,逻辑需重新确认是否还拿", panic:"成本29.0,现22.3,已破15%恐慌值深水", action:"watch", actionTxt:"重审" },
-    { name:"紫金矿业", code:"601899", role:"sword", mainline:"铜/矿产", mainState:"价值回归候选,但业务杂",
-      logicOn:true, logic:"铜长期双风口(新能源+算力)。但紫金业务杂(铜+金+小金属),受多方面影响。XD除权后-24.5%",
-      holdType:"长线", holdHint:"赌风格切换,要有止损线", panic:"高自己龙头但非纯铜,涨跌受贵金属拖累", action:"hold", actionTxt:"持有" },
-    { name:"金发科技", code:"600143", role:"shield", mainline:"化工(防御)", mainState:"风格切换受益,化工有预期",
-      logicOn:true, logic:"今年化工=去年的铜,化肥已引出预期。-16.7%相对最浅,盾的属性",
-      holdType:"长线", holdHint:"可作盾底仓,每日做T摊薄", panic:"油价>85美金煤化工成本最低", action:"hold", actionTxt:"持有" },
-    { name:"赛力斯", code:"601127", role:"sword", mainline:"整车/消费", mainState:"整车=消费端,琰哥点名去掉",
-      logicOn:false, logic:"亏损最深-49.35%。整车偏消费端,琰哥新能源方向明确剔除整车,智驾消费起不来",
-      holdType:"清仓", holdHint:"该清未清的尾仓,逻辑已脱离主线", panic:"-49%解套以年计,留盈卖亏原则下应优先处理", action:"cut", actionTxt:"清仓" },
-    { name:"神剑股份", code:"002361", role:"sword", mainline:"无明确主线", mainState:"已脱离主线",
-      logicOn:false, logic:"-39%,不在当前任何主线。多期标记待清未清",
-      holdType:"清仓", holdHint:"买新票前先清尾部 —— 头号待清", panic:"无主线支撑,反弹即走", action:"cut", actionTxt:"清仓" },
-    { name:"华友钴业", code:"603799", role:"sword", mainline:"新能源/电池材料", mainState:"电池链,看前低支撑",
-      logicOn:true, logic:"电池材料,琰哥这期看好新能源电池链。-19.7%,需结合大盘看W底确认",
-      holdType:"长线", holdHint:"赌风格切换到新能源,破前低不考虑", panic:"超跌但未到前低最低点,等确认", action:"watch", actionTxt:"观察" },
-    { name:"欣旺达", code:"300207", role:"sword", mainline:"新能源/电池", mainState:"电池链,看前低支撑",
-      logicOn:true, logic:"电池方向,琰哥看好但宁王才是天花板。-24.6%,需看技术位",
-      holdType:"长线", holdHint:"电池有机会但选龙头,技术位破则走", panic:"非电池龙头,跟涨力度弱于宁王", action:"watch", actionTxt:"观察" },
-    { name:"先导智能", code:"300450", role:"sword", mainline:"新能源/锂电设备", mainState:"电池链设备端",
-      logicOn:true, logic:"锂电设备,绑定电池扩产。-17.6%相对浅,新能源风格切换受益",
-      holdType:"长线", holdHint:"跟电池链,看大盘风格是否切", panic:"设备端弹性大但依赖下游扩产", action:"watch", actionTxt:"观察" },
-    { name:"湖南裕能", code:"301358", role:"sword", mainline:"新能源/正极材料", mainState:"电池链,亏损最浅",
-      logicOn:true, logic:"磷酸铁锂正极龙头。-11.8%全场最浅,新能源链中相对扛跌",
-      holdType:"长线", holdHint:"电池链可留,跟储能逻辑", panic:"正极环节竞争激烈,看中报", action:"hold", actionTxt:"持有" },
-    { name:"海力风电", code:"301155", role:"sword", mainline:"风电", mainState:"不在当前主线",
-      logicOn:false, logic:"-39.5%。风电不在琰哥这期看好方向,新能源他重储能/电池/核能",
-      holdType:"清仓", holdHint:"多期标记待清,风电非主线", panic:"-39%深套,无催化", action:"cut", actionTxt:"清仓" },
-    { name:"泰格医药", code:"300347", role:"sword", mainline:"CRO/医药", mainState:"非创新药出海BD主线",
-      logicOn:false, logic:"-23.7%。CRO属医药但非琰哥点的「出海BD创新药」,逻辑不在风口",
-      holdType:"清仓", holdHint:"多期标记待清,若看好医药应换创新药龙头", panic:"CRO景气与创新药不同步", action:"cut", actionTxt:"清仓" },
-    { name:"光威复材", code:"300699", role:"sword", mainline:"碳纤维", mainState:"中长线建仓品种",
-      logicOn:true, logic:"碳纤维,琰哥框架中属底部横盘建仓品种。-18.9%",
-      holdType:"长线", holdHint:"底部横盘期可留,商业航天/军工材料关联", panic:"题材关联弱,需耐心", action:"hold", actionTxt:"持有" },
-    { name:"维科技术", code:"600152", role:"sword", mainline:"无明确主线", mainState:"已脱离主线",
-      logicOn:false, logic:"-28.2%,无明确主线支撑,小市值尾仓",
-      holdType:"清仓", holdHint:"待清尾部", panic:"无主线无催化", action:"cut", actionTxt:"清仓" },
-    { name:"中科环保", code:"301175", role:"sword", mainline:"无明确主线", mainState:"已脱离主线",
-      logicOn:false, logic:"-27.9%,环保非当前主线,市值最小0.25万",
-      holdType:"清仓", holdHint:"待清尾部,占位无意义", panic:"无主线无催化", action:"cut", actionTxt:"清仓" }
-  ],
-
-  tempoBig: "一周年 · 普涨变盘日,缩量高切高",
-  tempoDesc: "节目一周年。今日通信电子、国防军工(商业航天)领涨,科技主线与题材(商业航天/抗日)齐飞,但全场仅约1:1红绿比、缩量暴涨且偏局部。琰哥判断不踏实,下午若加速将做止盈减仓;叠加6/30基金排名结束,变盘信号强。",
-
-  cycle: "B",
-
-  alert: {
-    title: "CPU/光 — 高位滞涨后反抽",
-    body: "上周四五已提示光/CPU/光纤高位横盘滞涨、技术见问题。周五与周一回踩,跌破15分钟短线支撑(15-225、击穿15-85);今日为反抽。反抽后在15-99到20日线之间形成压力区,大概率是下跌反弹、确认高点后再下杀的拐点。短线者考虑减仓,长线者自审波段意愿;纯量价技术判断,消息面不可预料。"
-  },
-
-  plays: [
-    { cls:"p1", n:"剧本① 风格切换兑现", prob:"6/30催化",
-      body:"基金排名6/30结束(上周三起已调仓),部分高收益仓止盈、部分资金回流价值与老方向(贵金属/消费电子/煤炭),这是近两日其他板块「有水喝」的原因。",
-      act:"应对:跟进价值回流与新能源/创新药等切换方向,科技仓重审长短线定位。" },
-    { cls:"p2", n:"剧本② 主线横盘 · 内存接力(最看好)", prob:"概率最大",
-      body:"CPU/光主线高位横盘震荡,内存顶部利空不跌、基本面扎实接棒,资金在科技高位内部+题材间轮动;主线只需横盘不需大涨。",
-      act:"应对:内存调深即机会;题材(商业航天/抗日)能做则跟,吃到肉按组合止盈。" },
-    { cls:"p3", n:"剧本③ 缩量后回调", prob:"需防 缩量",
-      body:"普涨却不放量、又是局部行情,缩量暴涨持续性存疑。高位票(主板已+10%、+7~8%者)继续往里冲性价比低。",
-      act:"应对:吃到肉的减仓止盈、控制仓位,不上头追高。" }
-  ],
-
-  dirs: [
-    { rank:"1", n:"内存", badge:"主线接力 信仰级",
-      body:"内存之于韩国=光之于中国。顶部出多重利空仍涨,利空洗不走人、基本面太扎实近乎信仰。CPU/光若往后退,内存最可能被提起来接力。",
-      key:"原话送大家:盯着内存,调得稍微深都是机会。" },
-    { rank:"2", n:"国产替代 / 华为升腾", badge:"韩国AI梭哈映射",
-      body:"李在明宣布三大超级体——半导体制造、先进封装(HBM)、AI数据中心,总投资约8万亿人民币(1800万亿韩元),为全球首个梭哈AI的国家;赌HBM封装+AI算力基建(光模块/液冷)+设备材料(晶圆)。",
-      key:"第一感觉:利好华为升腾系列整个上下游 —— 先埋个伏笔,后续回Q。" },
-    { rank:"3", n:"题材双线:商业航天 + 抗日", badge:"题材 看催化",
-      body:"国防军工今日+3.86%全靠商业航天(上海航天)。抗日线属科技题材,今早底部回拉、已赚点钱。题材有爆发时间窗,完了就完了。",
-      key:"题材跟法:能做则跟、吃到即走;按结构做中段或短线,别当主线长拿。" },
-    { rank:"4", n:"价值回流 · 老方向", badge:"风格切换受益",
-      body:"基金排名结束后,该回板块的钱回流:贵金属回贵金属、消费电回消费、煤炭/化工等老方向错杀修复,这两天已开始有水喝。",
-      key:"风格切换只能切回老方向;切换有阵痛,及时跟进问题不大。" }
-  ],
-
-  mainlines: [
-    { name:"CPU/光(总龙头)", state:"高位滞涨后反抽 · 压力区拐点", level:"cold", badge:"减仓" },
-    { name:"内存", state:"利空不跌 · 基本面信仰级接力", level:"hot", badge:"接力" },
-    { name:"商业航天", state:"国防军工领涨驱动 · 看发射催化", level:"warm", badge:"题材" },
-    { name:"抗日线", state:"科技题材 · 今早底部回拉", level:"warm", badge:"题材" },
-    { name:"国产替代/华为升腾", state:"韩国8万亿AI投资映射 · 埋伏", level:"warm", badge:"伏笔" }
-  ],
-
-  timepoints: [
-    { d:"6/30", ev:"基金排名结束", note:"机构锁排名,部分止盈、部分资金回流老方向;上周三起已调仓" },
-    { d:"7-8月", ev:"中报披露窗口", note:"内存等基本面扎实方向占优,谁好谁涨、谁差谁挨打" },
-    { d:"逢发射", ev:"商业航天催化", note:"上海航天/朱雀等发射成功才爆发,题材随机性大" },
-    { d:"逢新闻", ev:"抗日线催化", note:"题材性、新闻驱动,底部回拉后看持续性" }
-  ],
-
-  dict: [
-    { q:"缩量暴涨", badge:"本期", a:"板块/指数大涨但成交量反而萎缩。代表上涨缺乏增量资金承接、持续性存疑;普涨却不放量、又是局部行情尤其要警惕,通常不宜上头追高。" },
-    { q:"反抽", badge:"本期", a:"跌破支撑后的向上反弹,常用于确认前期高点。反抽若站不上压力位(如15-99到20日线区间),后续可能再下杀,短线常视为离场点。" },
-    { q:"内存信仰", badge:"本期", a:"内存顶部出多重利空仍持续上涨,说明利空洗不走人、基本面太扎实,资金把它当信仰级主线。琰哥:CPU/光退潮则内存接力。" },
-    { q:"国产替代(韩国AI梭哈)", badge:"本期", a:"李在明宣布约8万亿人民币押注半导体制造、先进封装(HBM)、AI数据中心,为首个梭哈AI的国家。映射到中国即利好国产算力(华为升腾)及上下游替代。" },
-    { q:"风格漂移 / 基金排名", badge:"本期", a:"基金重仓偏离原定板块(如医药基金重仓科技)。半年度排名前后机构集中调仓,监管对漂移趋严、限期不回板块或受罚;混合型基金单票约限10%、单板块约限30%。" },
-    { q:"题材 vs 主线", badge:"本期", a:"主线只需横盘/震荡即可持有,生命周期长;题材有明确爆发时间窗、完了就完了。题材能做则跟、吃到即走,不能当主线长拿。" },
-    { q:"15分钟支撑/压力", badge:"本期·技术", a:"短线级别均线技术位(15-85、15-225等)。跌破短线支撑为强转弱;反抽后15-99到20日线之间形成压力区,过不过两说。" },
-    { q:"高息高 / 高切高", badge:"框架", a:"资金在高位板块内部互相切换、不下车,而非切向低位。今日科技+题材齐飞、越走越极致即典型表现。" },
-    { q:"刀盾组合", badge:"框架", a:"琰哥核心操作系统:永远保持进攻仓(剑)和防御仓(盾)并存。盾=长线底仓每日做T;剑=主线龙头灵活调整。跌减仓、涨加仓,绝不满仓 —— 今日琰哥保底仓略高、做T摊薄。" },
-    { q:"15%恐慌值", badge:"框架", a:"绝大多数股票在-15%位置达到恐慌巅峰。若不反弹会进一步下杀20-25%,解套以季度甚至年计。买前自问:跌15%还能拿吗?不能=仓位太重。" },
-    { q:"风格切换", badge:"框架", a:"市场资金从一类板块(如科技)整体转向另一类(如价值/老方向)。通常伴随阵痛下跌,切得丝滑则阵痛短,切不好可能演变成毁灭性下跌。" }
-  ],
-
-  quote: "「炒股,更重要的是你愿意讲、还得有人愿意听 —— 一周年,谢谢这一路风雨与共的默契。」"
-};
-
-/* ============================================================
-   渲染区
-   ============================================================ */
-document.getElementById('upd').textContent = "数据时点 · " + DATA.updated;
-document.getElementById('swPct').textContent = DATA.posture.sword;
-document.getElementById('shPct').textContent = DATA.posture.shield;
-
 const actCls = {hold:'hold', add:'add', watch:'watch', cut:'cut'};
-document.getElementById('cards').innerHTML = DATA.holdings.map(h => `
-  <div class="card ${h.logicOn?'':'dead'}">
-    <div class="crow">
-      <div><span class="name">${h.name}</span><span class="code">${h.code}</span></div>
-      <span class="tag ${h.role}">${h.role==='sword'?'剑 进攻':'盾 防御'}</span>
-    </div>
-    <div class="line2"><span class="chip">主线 <b>${h.mainline}</b></span><span class="chip">${h.mainState}</span></div>
-    <div class="logic ${h.logicOn?'on':'off'}"><span class="k">${h.logicOn?'逻辑还在':'逻辑已破'}</span> · ${h.logic}</div>
-    <div class="foot"><div class="hold"><b>${h.holdType}</b> · ${h.holdHint}</div>
-      <span class="act ${actCls[h.action]}">${h.actionTxt}</span></div>
-    <div class="panic">⚠ ${h.panic}</div>
-  </div>`).join('');
-
-document.getElementById('tempoBig').textContent = DATA.tempoBig;
-document.getElementById('tempoDesc').textContent = DATA.tempoDesc;
-
 const cycles = [
   {k:"A", t:"双吹风", d:"3-4月·最强"}, {k:"B", t:"单吹风", d:"5-10月·题材"}, {k:"C", t:"埋伏期", d:"10-12月·赌预期"}
 ];
-document.getElementById('cyc').innerHTML = cycles.map(c=>`
-  <div class="${c.k===DATA.cycle?'on':''}"><span class="big">${c.t}</span>${c.d}</div>`).join('');
-
-document.getElementById('alertBox').innerHTML = `
-  <div class="alert"><div class="ah">⚠ ${DATA.alert.title}</div><div class="abody">${DATA.alert.body}</div></div>`;
-
-document.getElementById('plays').innerHTML = DATA.plays.map(p=>`
-  <div class="play ${p.cls}">
-    <div class="ph"><span class="pn">${p.n}</span><span class="prob">${p.prob}</span></div>
-    <div class="pbody">${p.body}</div><div class="pact">${p.act}</div>
-  </div>`).join('');
-
-document.getElementById('dirs').innerHTML = DATA.dirs.map(d=>`
-  <div class="dir">
-    <div class="dh"><span class="rank">${d.rank}</span><span class="dn">${d.n}</span><span class="dbadge">${d.badge}</span></div>
-    <div class="dbody">${d.body}</div><div class="dkey">${d.key}</div>
-  </div>`).join('');
-
 const lvColor={hot:'#b8442e',warm:'#c08a2d',cold:'#9a9488'};
 const lvBadge={hot:'rgba(184,68,46,.12)',warm:'rgba(192,138,45,.14)',cold:'#e6e0d4'};
 const lvBadgeT={hot:'#b8442e',warm:'#c08a2d',cold:'#8a8478'};
-document.getElementById('mainlines').innerHTML = DATA.mainlines.map(m=>`
-  <div class="mainline"><span class="dot" style="background:${lvColor[m.level]}"></span>
-    <div><div class="nm">${m.name}</div><div class="st">${m.state}</div></div>
-    <span class="badge" style="background:${lvBadge[m.level]};color:${lvBadgeT[m.level]}">${m.badge}</span>
-  </div>`).join('');
 
-document.getElementById('timepts').innerHTML = DATA.timepoints.map(t=>`
-  <div class="timept"><span class="d">${t.d}</span><span class="ev">${t.ev}<small>${t.note}</small></span></div>`).join('');
+function render(DATA){
+  document.getElementById('upd').textContent = "数据时点 · " + DATA.updated;
+  document.getElementById('swPct').textContent = DATA.posture.sword;
+  document.getElementById('shPct').textContent = DATA.posture.shield;
 
-document.getElementById('dict').innerHTML = DATA.dict.map((d,i)=>`
-  <div class="dict-item" data-i="${i}">
-    <div class="dict-q">${d.q}<span class="badge">${d.badge}</span><span class="arr">▶</span></div>
-    <div class="dict-a"><div class="a-inner dict-a-inner">${d.a}</div></div>
-  </div>`).join('');
+  document.getElementById('cards').innerHTML = DATA.holdings.map(h => `
+    <div class="card ${h.logicOn?'':'dead'}">
+      <div class="crow">
+        <div><span class="name">${h.name}</span><span class="code">${h.code}</span></div>
+        <span class="tag ${h.role}">${h.role==='sword'?'剑 进攻':'盾 防御'}</span>
+      </div>
+      <div class="line2"><span class="chip">主线 <b>${h.mainline}</b></span><span class="chip">${h.mainState}</span></div>
+      <div class="logic ${h.logicOn?'on':'off'}"><span class="k">${h.logicOn?'逻辑还在':'逻辑已破'}</span> · ${h.logic}</div>
+      <div class="foot"><div class="hold"><b>${h.holdType}</b> · ${h.holdHint}</div>
+        <span class="act ${actCls[h.action]}">${h.actionTxt}</span></div>
+      <div class="panic">⚠ ${h.panic}</div>
+    </div>`).join('');
 
-document.getElementById('quote').textContent = DATA.quote;
+  document.getElementById('tempoBig').textContent = DATA.tempoBig;
+  document.getElementById('tempoDesc').textContent = DATA.tempoDesc;
 
-// 词典点击展开
-document.querySelectorAll('.dict-item').forEach(item=>{
-  item.querySelector('.dict-q').addEventListener('click',()=>item.classList.toggle('open'));
-});
+  document.getElementById('cyc').innerHTML = cycles.map(c=>`
+    <div class="${c.k===DATA.cycle?'on':''}"><span class="big">${c.t}</span>${c.d}</div>`).join('');
+
+  document.getElementById('alertBox').innerHTML = `
+    <div class="alert"><div class="ah">⚠ ${DATA.alert.title}</div><div class="abody">${DATA.alert.body}</div></div>`;
+
+  document.getElementById('plays').innerHTML = DATA.plays.map(p=>`
+    <div class="play ${p.cls}">
+      <div class="ph"><span class="pn">${p.n}</span><span class="prob">${p.prob}</span></div>
+      <div class="pbody">${p.body}</div><div class="pact">${p.act}</div>
+    </div>`).join('');
+
+  document.getElementById('dirs').innerHTML = DATA.dirs.map(d=>`
+    <div class="dir">
+      <div class="dh"><span class="rank">${d.rank}</span><span class="dn">${d.n}</span><span class="dbadge">${d.badge}</span></div>
+      <div class="dbody">${d.body}</div><div class="dkey">${d.key}</div>
+    </div>`).join('');
+
+  document.getElementById('mainlines').innerHTML = DATA.mainlines.map(m=>`
+    <div class="mainline"><span class="dot" style="background:${lvColor[m.level]}"></span>
+      <div><div class="nm">${m.name}</div><div class="st">${m.state}</div></div>
+      <span class="badge" style="background:${lvBadge[m.level]};color:${lvBadgeT[m.level]}">${m.badge}</span>
+    </div>`).join('');
+
+  document.getElementById('timepts').innerHTML = DATA.timepoints.map(t=>`
+    <div class="timept"><span class="d">${t.d}</span><span class="ev">${t.ev}<small>${t.note}</small></span></div>`).join('');
+
+  document.getElementById('dict').innerHTML = DATA.dict.map((d,i)=>`
+    <div class="dict-item" data-i="${i}">
+      <div class="dict-q">${d.q}<span class="badge">${d.badge}</span><span class="arr">▶</span></div>
+      <div class="dict-a"><div class="a-inner dict-a-inner">${d.a}</div></div>
+    </div>`).join('');
+
+  document.getElementById('quote').textContent = DATA.quote;
+
+  // 词典点击展开（每次渲染后重新绑定）
+  document.querySelectorAll('.dict-item').forEach(item=>{
+    item.querySelector('.dict-q').addEventListener('click',()=>item.classList.toggle('open'));
+  });
+}
+
+/* ============================================================
+   数据加载 —— 读清单、填下拉、按选择加载某期
+   ============================================================ */
+const sel = document.getElementById('epSel');
+
+function loadEpisode(date){
+  return fetch('data/'+date+'.json', {cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(render)
+    .catch(err=>{
+      document.getElementById('cards').innerHTML =
+        '<div class="card"><div class="logic off"><span class="k">加载失败</span> · '+date+'（'+err.message+'）</div></div>';
+    });
+}
+
+fetch('data/index.json', {cache:'no-cache'})
+  .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(list=>{
+    sel.innerHTML = list.map(e=>`<option value="${e.date}">${e.date} · ${e.label}</option>`).join('');
+    sel.addEventListener('change', ()=>{ loadEpisode(sel.value); window.scrollTo(0,0); });
+    if(list.length) loadEpisode(list[0].date);
+  })
+  .catch(()=>{ sel.innerHTML = '<option>清单加载失败</option>'; });
 
 // tab切换
 document.querySelectorAll('.tab').forEach(tab=>{
