@@ -126,6 +126,16 @@
   .dir .dkey{font-size:12px; margin-top:6px; padding:7px 10px; background:#faf7f0; border-radius:7px;
     border-left:3px solid var(--gold); color:#6a5a38}
   .dir .dkey b{color:var(--gold)}
+  .dir .dscreen{font-size:12px; margin-top:6px; padding:7px 10px; background:#eef3f0; border-radius:7px;
+    border-left:3px solid var(--shield); color:#3f5d52; line-height:1.6}
+
+  .srcbox{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:13px 15px; margin-bottom:9px}
+  .srcnote{font-size:12px; color:#5a5448; margin-bottom:10px; line-height:1.55}
+  .srcnote b{color:var(--ink)}
+  .srccell{padding:8px 11px; background:#faf7f0; border-radius:8px; margin-bottom:7px}
+  .srccell:last-child{margin-bottom:0}
+  .srccell .sct{font-size:12.5px; font-weight:800; color:var(--ink); margin-bottom:2px}
+  .srccell .scd{font-size:12px; color:#5a5448; line-height:1.55}
 
   .mainline{background:var(--card); border:1px solid var(--line); border-radius:10px;
     padding:12px 14px; margin-bottom:9px; display:flex; align-items:center; gap:12px}
@@ -203,6 +213,15 @@
   <div class="sig-hd">风格切换候选方向</div>
   <div id="dirs"></div>
 
+  <div class="sig-hd">自己筛 · 数据源与步骤</div>
+  <div class="srcbox">
+    <div class="srcnote">看板只给方向。个股请用下面的<b>公开渠道自己核实业绩与逻辑</b>——本页不提供荐股、不构成投资建议。</div>
+    <div class="srccell"><div class="sct">官方信披</div><div class="scd">巨潮资讯网 cninfo · 上交所/深交所公告 —— 财报、业绩预告最权威</div></div>
+    <div class="srccell"><div class="sct">行情 / 财务</div><div class="scd">东方财富、同花顺 —— 行情、F10、财务指标</div></div>
+    <div class="srccell"><div class="sct">研报</div><div class="scd">券商研报、慧博、东财研报频道 —— 看逻辑与盈利预测,别只看标题</div></div>
+    <div class="srccell"><div class="sct">三步法</div><div class="scd">① 看板定方向 → ② 沿产业链列候选 → ③ 信披+研报核业绩、设止损</div></div>
+  </div>
+
   <div class="sig-hd">主线状态</div>
   <div id="mainlines"></div>
 
@@ -267,6 +286,7 @@ function render(DATA){
     <div class="dir">
       <div class="dh"><span class="rank">${d.rank}</span><span class="dn">${d.n}</span><span class="dbadge">${d.badge}</span></div>
       <div class="dbody">${d.body}</div><div class="dkey">${d.key}</div>
+      ${d.screen?`<div class="dscreen">${d.screen}</div>`:''}
     </div>`).join('');
 
   document.getElementById('mainlines').innerHTML = DATA.mainlines.map(m=>`
