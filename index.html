@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>刀盾工作台</title>
+<title>wealthcode</title>
 <link rel="icon" type="image/png" href="cat.png">
 <link rel="apple-touch-icon" href="cat.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="刀盾">
+<meta name="apple-mobile-web-app-title" content="wealthcode">
 
 
 
@@ -25,9 +25,13 @@
     padding-bottom:80px; max-width:680px; margin:0 auto;
   }
   header{padding:22px 20px 14px; border-bottom:2px solid var(--ink); position:relative}
-  .title{font-size:24px; font-weight:800; letter-spacing:1px; display:flex; align-items:center; gap:8px}
-  .title .ji{color:var(--sword)} .title .dun{color:var(--shield)}
-  .sub{font-size:12px; color:var(--mute); margin-top:4px}
+  .brand{display:flex; align-items:center; gap:11px}
+  .logo{width:36px; height:36px; flex-shrink:0}
+  .title{font-size:27px; font-weight:800; letter-spacing:-.5px; line-height:1; display:flex; align-items:baseline}
+  .title .w1{color:var(--ink)}
+  .title .w2{color:var(--sword); font-weight:700; letter-spacing:-.5px;
+    font-family:ui-monospace,"SF Mono","JetBrains Mono","Consolas","Courier New",monospace}
+  .sub{font-size:12px; color:var(--mute); margin-top:5px}
   .updated{font-size:11px; color:var(--mute); font-variant-numeric:tabular-nums}
   .ep-row{display:flex; align-items:center; gap:10px; margin-top:8px}
   .ep-sel{font-size:13px; font-weight:600; color:var(--ink); background:var(--card);
@@ -170,8 +174,20 @@
 </head>
 <body>
 <header>
-  <div class="title"><span class="ji">刀</span><span class="dun">盾</span>工作台</div>
-  <div class="sub">琰哥框架 · 持仓逻辑与下周预案一屏掌握</div>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="8" y1="13" x2="8" y2="35" stroke="#2f5d50" stroke-width="1.8" stroke-linecap="round"/>
+      <rect x="4.5" y="19" width="7" height="12" rx="1.6" fill="#2f5d50"/>
+      <line x1="20" y1="8" x2="20" y2="31" stroke="#b8442e" stroke-width="1.8" stroke-linecap="round"/>
+      <rect x="16.5" y="14" width="7" height="11" rx="1.6" fill="#b8442e"/>
+      <line x1="32" y1="4" x2="32" y2="27" stroke="#2f5d50" stroke-width="1.8" stroke-linecap="round"/>
+      <rect x="28.5" y="9" width="7" height="13" rx="1.6" fill="#2f5d50"/>
+    </svg>
+    <div class="brandtext">
+      <div class="title"><span class="w1">wealth</span><span class="w2">code</span></div>
+      <div class="sub">琰哥框架 · 持仓逻辑与下周预案一屏掌握</div>
+    </div>
+  </div>
   <div class="ep-row">
     <select id="epSel" class="ep-sel" aria-label="选择往期"></select>
     <span class="updated" id="upd"></span>
