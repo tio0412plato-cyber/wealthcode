@@ -170,6 +170,27 @@
   .quote{margin:22px 2px 0; padding:14px 16px; background:#efe9dd; border-radius:10px;
     font-size:13.5px; color:#5a5448; font-style:italic; text-align:center}
   .disc{font-size:10.5px; color:var(--mute); text-align:center; margin:22px 16px 0; line-height:1.6}
+
+  /* 每日复盘 */
+  .rec-ctrl{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap}
+  .rec-modes{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+  .rec-mode{font-size:13px; font-weight:700; padding:6px 15px; background:var(--card); color:var(--mute);
+    border:none; cursor:pointer; font-family:inherit}
+  .rec-mode.on{background:var(--ink); color:var(--paper)}
+  .rtbl{width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px}
+  .rtbl th{font-size:11.5px; color:var(--mute); font-weight:600; text-align:left; padding:8px 8px;
+    border-bottom:2px solid var(--line)}
+  .rtbl td{padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+  .rtbl .nm{font-weight:700}
+  .rtbl .cd{font-size:10.5px; color:var(--mute); font-weight:500}
+  .rtbl .chg{font-weight:700; font-variant-numeric:tabular-nums}
+  .rtbl .chg.up{color:var(--warn)} .rtbl .chg.down{color:var(--ok)}
+  .rtbl .note{color:#5a5448; line-height:1.5}
+  .rtag{font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; display:inline-block}
+  .rtag.hold{background:#e9f3ec; color:var(--ok)}
+  .rtag.watch{background:#fdf3e0; color:var(--gold)}
+  .rtag.cut{background:#fbe9e7; color:var(--warn)}
+  .rec-empty{padding:28px 16px; text-align:center; color:var(--mute); font-size:13px; line-height:1.7}
 </style>
 </head>
 <body>
@@ -197,6 +218,7 @@
 <div class="tabs">
   <div class="tab on" data-p="hold">持仓诊断</div>
   <div class="tab" data-p="sig">信号速览</div>
+  <div class="tab" data-p="recap">每日复盘</div>
 </div>
 
 <!-- ============ 持仓诊断 ============ -->
@@ -248,6 +270,19 @@
   <div id="dict"></div>
 
   <div class="quote" id="quote"></div>
+</div>
+
+<!-- ============ 每日复盘 ============ -->
+<div class="page" id="recap">
+  <div class="rec-ctrl">
+    <div class="rec-modes">
+      <button class="rec-mode on" data-m="day" type="button">按日</button>
+      <button class="rec-mode" data-m="stock" type="button">按股</button>
+    </div>
+    <select id="recDate" class="ep-sel" aria-label="选择日期"></select>
+    <select id="recStock" class="ep-sel" style="display:none" aria-label="选择股票"></select>
+  </div>
+  <div id="recTable"></div>
 </div>
 
 <div class="disc">仅为个人学习笔记 · 不构成任何投资建议 · 数据时点见顶部</div>
@@ -351,6 +386,67 @@ function EP_MANIFEST(list){
   loadEpisode(list[0].date);
 }
 
+/* ============================================================
+   每日复盘 —— 数据来自 data/recaps.js,用 REC(date, rows) 注册
+   rows: [{name, code, chg, act, note}]  chg 如 "+5.2%"/"-1.1%"/"—"
+   ============================================================ */
+const RECAPS = {}, RECAP_DATES = [];
+function REC(date, rows){ RECAPS[date] = rows; RECAP_DATES.push(date); }
+
+function recTagClass(act){
+  if(/持有|加仓|底仓/.test(act)) return 'hold';
+  if(/清仓|减仓|止盈|离场|走/.test(act)) return 'cut';
+  return 'watch';
+}
+function chgClass(chg){
+  const s = String(chg||'').trim();
+  if(/^[+]/.test(s)) return 'up';
+  if(/^[-−]/.test(s)) return 'down';
+  return '';
+}
+let recMode = 'day';
+function renderRecap(){
+  const wrap = document.getElementById('recTable');
+  if(!RECAP_DATES.length){
+    wrap.innerHTML = '<div class="rec-empty">还没有复盘数据。<br>发我每天每只票的「涨跌% + 操作 + 一句复盘」,我来录入。</div>';
+    return;
+  }
+  const cell = r => `<td class="chg ${chgClass(r.chg)}">${r.chg||'—'}</td>`+
+    `<td><span class="rtag ${recTagClass(r.act)}">${r.act||'—'}</span></td>`+
+    `<td class="note">${r.note||''}</td>`;
+  if(recMode === 'day'){
+    const rows = RECAPS[document.getElementById('recDate').value] || [];
+    wrap.innerHTML = '<table class="rtbl"><colgroup><col style="width:27%"><col style="width:15%"><col style="width:16%"><col style="width:42%"></colgroup>'+
+      '<thead><tr><th>股票</th><th>涨跌</th><th>操作</th><th>复盘</th></tr></thead><tbody>'+
+      rows.map(r=>`<tr><td><span class="nm">${r.name}</span> <span class="cd">${r.code||''}</span></td>${cell(r)}</tr>`).join('')+
+      '</tbody></table>';
+  } else {
+    const key = document.getElementById('recStock').value, rows = [];
+    RECAP_DATES.forEach(d=>{ const hit=(RECAPS[d]||[]).find(r=>(r.code||r.name)===key); if(hit) rows.push(Object.assign({d}, hit)); });
+    wrap.innerHTML = '<table class="rtbl"><colgroup><col style="width:18%"><col style="width:15%"><col style="width:16%"><col style="width:51%"></colgroup>'+
+      '<thead><tr><th>日期</th><th>涨跌</th><th>操作</th><th>复盘</th></tr></thead><tbody>'+
+      rows.map(r=>`<tr><td style="font-variant-numeric:tabular-nums">${r.d.slice(5)}</td>${cell(r)}</tr>`).join('')+
+      '</tbody></table>';
+  }
+}
+function initRecap(){
+  const dSel = document.getElementById('recDate'), sSel = document.getElementById('recStock');
+  dSel.innerHTML = RECAP_DATES.map(d=>`<option value="${d}">${d}</option>`).join('');
+  const seen = new Set(), opts = [];
+  RECAP_DATES.forEach(d=>(RECAPS[d]||[]).forEach(r=>{ const k=r.code||r.name; if(!seen.has(k)){ seen.add(k); opts.push({k, name:r.name, code:r.code}); } }));
+  sSel.innerHTML = opts.map(o=>`<option value="${o.k}">${o.name}${o.code?' '+o.code:''}</option>`).join('');
+  dSel.addEventListener('change', renderRecap);
+  sSel.addEventListener('change', renderRecap);
+  document.querySelectorAll('.rec-mode').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.rec-mode').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); recMode = b.dataset.m;
+    dSel.style.display = recMode==='day' ? '' : 'none';
+    sSel.style.display = recMode==='stock' ? '' : 'none';
+    renderRecap();
+  }));
+  renderRecap();
+}
+
 // tab切换
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
@@ -363,5 +459,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 });
 </script>
 <script src="data/episodes.js"></script>
+<script src="data/recaps.js"></script>
+<script>initRecap();</script>
 </body>
 </html>
